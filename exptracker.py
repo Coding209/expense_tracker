@@ -92,9 +92,3 @@ elif option == "Filter expenses by category":
 elif option == "View expenses by category chart":
     st.header("Expenses by Category Chart")
     plot_expenses_by_category(st.session_state.expenses)
-
-
-# View expenses by category chart
-elif option == "View expenses by category chart":
-    st.header("Expenses by Category Chart")
-    plot_expenses_by_category(st.session_state.expenses)
