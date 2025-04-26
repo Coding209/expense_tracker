@@ -1,100 +1,79 @@
 import streamlit as st
-import pandas as pd
-import matplotlib.pyplot as plt
 
-# Initialize session state for expenses
+# === Core Functions (Unchanged) ===
+def add_expense(expenses, amount, category):
+    expenses.append({'amount': amount, 'category': category})
+
+def print_expenses(expenses):
+    for expense in expenses:
+        st.write(f'Amount: ${expense["amount"]}, Category: {expense["category"]}')
+
+def total_expenses(expenses):
+    return sum(expense['amount'] for expense in expenses)
+
+def filter_expenses_by_category(expenses, category):
+    return [expense for expense in expenses if expense['category'] == category]
+
+# === Streamlit App ===
+st.title("Simple Expense Tracker with Budget")
+
+# Store expenses and budget in session state
 if 'expenses' not in st.session_state:
     st.session_state.expenses = []
 
-# Function to add a new expense
-def add_expense(amount, category):
-    st.session_state.expenses.append({'amount': amount, 'category': category})
+if 'budget' not in st.session_state:
+    st.session_state.budget = 0
 
-# Function to display all expenses
-def display_expenses(expenses):
-    if not expenses:
-        st.write("No expenses to show.")
-    else:
-        # Create a pandas DataFrame for better presentation
-        df = pd.DataFrame(expenses)
-        st.write(df)
+# Set budget
+st.sidebar.header("Set Your Budget")
+budget_input = st.sidebar.number_input("Monthly Budget", min_value=0.0)
+if st.sidebar.button("Update Budget"):
+    st.session_state.budget = budget_input
+    st.success(f"Budget updated to ${st.session_state.budget:.2f}")
 
-# Function to calculate total expenses
-def total_expenses(expenses):
-    return sum([expense['amount'] for expense in expenses])
-
-# Function to filter expenses by category
-def filter_expenses_by_category(expenses, category):
-    return [expense for expense in expenses if expense['category'].lower() == category.lower()]
-
-# Function to visualize expenses by category
-def plot_expenses_by_category(expenses):
-    if expenses:
-        df = pd.DataFrame(expenses)
-        category_totals = df.groupby('category')['amount'].sum()
-        
-        # Plot a pie chart
-        fig, ax = plt.subplots()
-        category_totals.plot(kind='pie', autopct='%1.1f%%', ax=ax, startangle=90)
-        ax.set_ylabel('')
-        st.pyplot(fig)
-    else:
-        st.write("No data available for chart.")
-
-# Streamlit app interface
-st.title("Expense Tracker App")
-
-# Sidebar for navigation
-st.sidebar.header("Options")
-option = st.sidebar.selectbox(
-    "Select an option",
-    ["Add an expense", "List all expenses", "Show total expenses", "Filter expenses by category", "View expenses by category chart"]
-)
-
-# Add an expense
-if option == "Add an expense":
-    st.header("Add a New Expense")
-    amount = st.number_input("Enter amount", min_value=0.01, step=0.01)
-    category = st.text_input("Enter category")
-    
-    if st.button("Add Expense"):
-        if amount > 0 and category:
-            add_expense(amount, category)
-            st.success(f"Expense of ${amount} for {category} added!")
+# Add expense form
+st.subheader("Add a New Expense")
+with st.form("expense_form"):
+    amount = st.number_input("Amount", min_value=0.0)
+    category = st.text_input("Category")
+    submitted = st.form_submit_button("Add Expense")
+    if submitted:
+        if category.strip():
+            add_expense(st.session_state.expenses, amount, category)
+            st.success("Expense added!")
         else:
-            st.warning("Please provide valid inputs for both amount and category.")
+            st.warning("Please enter a valid category.")
 
-# List all expenses
-elif option == "List all expenses":
-    st.header("All Expenses")
-    display_expenses(st.session_state.expenses)
+# Show expenses
+st.subheader("All Expenses")
+if st.session_state.expenses:
+    print_expenses(st.session_state.expenses)
+else:
+    st.write("No expenses yet.")
 
-# Show total expenses
-elif option == "Show total expenses":
-    st.header("Total Expenses")
-    total = total_expenses(st.session_state.expenses)
-    st.write(f"Total Expenses: ${total:.2f}")
+# Show total
+st.subheader("Total Spent")
+total = total_expenses(st.session_state.expenses)
+st.write(f"${total}")
 
-# Filter expenses by category
-elif option == "Filter expenses by category":
-    st.header("Filter Expenses by Category")
-    category = st.text_input("Enter category to filter")
-    
-    if st.button("Filter"):
-        if category:
-            filtered_expenses = filter_expenses_by_category(st.session_state.expenses, category)
-            st.write(f"Expenses for {category}:")
-            display_expenses(filtered_expenses)
-        else:
-            st.warning("Please enter a category to filter.")
+# Budget comparison
+st.subheader("Budget Overview")
+if st.session_state.budget > 0:
+    remaining = st.session_state.budget - total
+    st.write(f"Budget: ${st.session_state.budget}")
+    if remaining >= 0:
+        st.success(f"You are within budget. Remaining: ${remaining:.2f}")
+    else:
+        st.error(f"You exceeded the budget by ${abs(remaining):.2f}")
+else:
+    st.info("No budget set yet.")
 
-# View expenses by category chart
-elif option == "View expenses by category chart":
-    st.header("Expenses by Category Chart")
-    plot_expenses_by_category(st.session_state.expenses)
+# Filter by category
+st.subheader("Filter by Category")
+categories = list(set([e['category'] for e in st.session_state.expenses]))
+if categories:
+    selected = st.selectbox("Select a category", categories)
+    filtered = filter_expenses_by_category(st.session_state.expenses, selected)
+    st.write(f"Expenses for {selected}:")
+    print_expenses(filtered)
 
-
-# View expenses by category chart
-elif option == "View expenses by category chart":
-    st.header("Expenses by Category Chart")
-    plot_expenses_by_category(st.session_state.expenses)
