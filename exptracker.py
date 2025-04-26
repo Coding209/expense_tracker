@@ -15,26 +15,20 @@ def filter_expenses_by_category(expenses, category):
     return [expense for expense in expenses if expense['category'] == category]
 
 # === Streamlit App ===
-st.title("Simple Expense Tracker with Budget")
+st.title("Simple Expense Tracker")
 
 # Store expenses and budget in session state
 if 'expenses' not in st.session_state:
     st.session_state.expenses = []
 
-if 'budget' not in st.session_state:
-    st.session_state.budget = 0
+# --- Budget Input (Challenge 1) ---
+st.subheader("Set Your Budget")
+budget = st.number_input("Enter your budget amount", min_value=0.0)
 
-# Set budget
-st.sidebar.header("Set Your Budget")
-budget_input = st.sidebar.number_input("Monthly Budget", min_value=0.0)
-if st.sidebar.button("Update Budget"):
-    st.session_state.budget = budget_input
-    st.success(f"Budget updated to ${st.session_state.budget:.2f}")
-
-# Add expense form
+# --- Expense Form ---
 st.subheader("Add a New Expense")
 with st.form("expense_form"):
-    amount = st.number_input("Amount", min_value=0.0)
+    amount = st.number_input("Amount", min_value=0.0, key="expense_amount")
     category = st.text_input("Category")
     submitted = st.form_submit_button("Add Expense")
     if submitted:
@@ -44,31 +38,30 @@ with st.form("expense_form"):
         else:
             st.warning("Please enter a valid category.")
 
-# Show expenses
+# --- Show Expenses ---
 st.subheader("All Expenses")
 if st.session_state.expenses:
     print_expenses(st.session_state.expenses)
 else:
     st.write("No expenses yet.")
 
-# Show total
+# --- Show Total ---
 st.subheader("Total Spent")
 total = total_expenses(st.session_state.expenses)
 st.write(f"${total}")
 
-# Budget comparison
+# --- Budget Comparison (Challenge 2) ---
 st.subheader("Budget Overview")
-if st.session_state.budget > 0:
-    remaining = st.session_state.budget - total
-    st.write(f"Budget: ${st.session_state.budget}")
+if budget > 0:
+    remaining = budget - total
     if remaining >= 0:
         st.success(f"You are within budget. Remaining: ${remaining:.2f}")
     else:
         st.error(f"You exceeded the budget by ${abs(remaining):.2f}")
 else:
-    st.info("No budget set yet.")
+    st.info("No budget entered yet.")
 
-# Filter by category
+# --- Filter by Category ---
 st.subheader("Filter by Category")
 categories = list(set([e['category'] for e in st.session_state.expenses]))
 if categories:
@@ -76,4 +69,5 @@ if categories:
     filtered = filter_expenses_by_category(st.session_state.expenses, selected)
     st.write(f"Expenses for {selected}:")
     print_expenses(filtered)
+
 
